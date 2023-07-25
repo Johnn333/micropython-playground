@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>MicroPython Playground</title>
+        <link rel="stylesheet" href="style.css">
+    </head>
+
+    <body>
+        <h1>Module Selection</h1>
+        <p>This page allows you to add and remove modules from two lists. <br>
+            This selection should show all the currently active modules <br>
+            and give the option to disable them by putting them in the other <br>
+            list, whilst also allowing users to add their own code here.
+        </p>
+        <div class="modules" id="modules">
+            <ul title="Active Modules" class="active_modules" id="active_modules" style="overflow-y: scroll;">
+            <li id="microbit.c">micobit.c</li>
+            <li id="microbit_mic.c">microbit_mic.c</li>
+            <li id="microbit_compass.c">microbit_compass.c</li>
+            </ul>
+
+            <ul title="Inactive Modules" class="inactive_modules" id="inactive_modules" style="overflow-y: scroll;">
+            <li id="examplemodule.c">examplemodule.c</li>
+            <li id="mymodule.py">mymodule.py</li>
+            </ul>
+        </div>
+        <button id="add-module">Add Module</button>
+        <button id="remove-module">Remove Module</button>
+
+        <script>
+            const activeList = document.getElementById("active_modules");
+            const inactiveList = document.getElementById("inactive_modules");
+            // Add a module to the active list, remove from inactive.
+            function addModule(name) {
+                var li = document.getElementById(name);
+                inactiveList.removeChild(li);
+                activeList.appendChild(li);
+            }
+            
+            // Remove a module from the active list, add to inactive
+            function removePack(name) {
+                var li = document.getElementById(name);
+                activeList.removeChild(li);
+                inactiveList.appendChild(li);
+            }
+            
+            // Add event listeners to the buttons
+            document.getElementById("add-module").addEventListener("click", function() {
+                addModule(prompt("Add Module With Name: "));
+            });
+            
+            document.getElementById("remove-module").addEventListener("click", function() {
+                removePack(prompt("Remove Module With Name: "));
+            });
+        </script>
+    </body>
+</html>
