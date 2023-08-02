@@ -13,7 +13,13 @@ class LLVM {
 
     fileSystem = null;
     tools = {};
-    clangdStdio;
+    LLVMStdio;
+
+    get(){
+        if(self.buffer.length === 0) return null;
+        const c = self.buffer.shift();
+        return c;
+    }
 
     async init() {
         postMessage({
@@ -24,6 +30,8 @@ class LLVM {
 
         const fileSystem = await new FileSystem();
         this.fileSystem = fileSystem;
+        self.fileSystem = fileSystem;
+        self.buffer = [];
 
         await fileSystem.unpack("./root.pack.br");
 
@@ -40,7 +48,7 @@ class LLVM {
         })
 
         const tools = {
-            "llvm-box": new LlvmBoxProcess(processConfig),
+            "llvm-box": new LlvmBoxProcess({FS: fileSystem.FS, noFSInit: true}),
             "python": new Python3Process({FS: fileSystem.FS, onrunprocess: llvm.runHelper}),
             "pythonHelper": new Python3Process({FS: fileSystem.FS, onrunprocess: llvm.runHelper}),
             "make": new MakeProcess(processConfig),
@@ -57,8 +65,12 @@ class LLVM {
             body: "Ready",
         })
         
-        // THIS NEEDS ALL TO GO INTO A RUN FUNCTION SOMEHWERE ON BUTTON PRESS.
 
+        self.tools["llvm-box"]._module.FS.init(llvm.get, undefined, undefined);
+
+        //this.LLVMStdio = new LLVMStdio(self.tools["llvm-box"]._module);
+        //console.log(await self.tools["llvm-box"].fileSystem.analyzePath("/src/codal_port"));
+        
         // Faking microbitversion.h
         this.fileSystem.mkdir('/src/codal_port/build');
         this.fileSystem.mkdir('/src/codal_port/build/genhdr')
@@ -102,8 +114,12 @@ class LLVM {
     onprocessend = () => {};
     onstdout = () => {};
     onstderr = () => {};
-    
+
     runHelper(args){
+        if(self.fileSystem.FS.analyzePath("/src/codal_port/stream")?.object?.contents){
+            self.buffer = Array.from(self.fileSystem.FS.analyzePath("/src/codal_port/stream").object.contents);
+        }
+
         if(args.includes("makeversionhdr.py") || args.includes("microbitversion.h.pre")){
             return "Git Commands breaking things, ignoring";
         }
@@ -128,7 +144,7 @@ class LLVM {
     }
 
     run(args) {
-        if ((typeof args) === "string") args = args.split(/ +/g);
+        if((typeof args) === "string") args = args.split(/ +/g);
                 
         switch (args[0]){
             case "arm-none-eabi-gcc" : args.shift(); args.unshift(...replaceGCC); break;
