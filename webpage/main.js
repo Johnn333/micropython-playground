@@ -8,7 +8,7 @@ function buildMicropython(){
 
 micropythonWorker.onmessage = (e) => {
     console.log(e);
-    if(e.data?.origin == "hex") download(hex2ascii(toHexString(e.data.body), "MICROBIT.hex"));
+    if(e.data?.origin == "hex") download(hex2ascii(toHexString(e.data.body)), "MICROBIT.hex"));
     else{
         Terminal.setValue(Terminal.getValue()+"\n"+"> "+e.data);
         Terminal.gotoLine(Terminal.session.getLength());
