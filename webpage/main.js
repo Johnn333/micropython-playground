@@ -9,6 +9,8 @@ function buildMicropython(){
 micropythonWorker.onmessage = (e) => {
     console.log(e);
     if(e.data?.origin == "hex") download(hex2ascii(toHexString(e.data.body)), "MICROBIT.hex");
+    else if(e.data?.origin == "pyfile") PYeditor.setValue(e.data.body);
+    else if(e.data?.origin == "cfile") Ceditor.setValue(e.data.body); 
     else{
         Terminal.setValue(Terminal.getValue()+"\n"+"> "+e.data);
         Terminal.gotoLine(Terminal.session.getLength());
