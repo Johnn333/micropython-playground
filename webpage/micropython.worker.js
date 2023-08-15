@@ -6,7 +6,7 @@ import MakeProcess from "./modules/MakeProcess.mjs";
 import MpyCrossProcess from "./modules/MpyCrossProcess.mjs";
 import StdIn from "./stdin.mjs";
 
-class LLVM {
+class MicroPython {
     initialised = false;
 
     constructor(){
@@ -32,8 +32,8 @@ class LLVM {
         // Wait for instantiation to complete. Store in GlobalWorkerSpace.
         const tools = {
             "llvm-box": new LlvmBoxProcess({FS: fileSystem.FS, noFSInit: true}),
-            "python": new Python3Process({FS: fileSystem.FS, onrunprocess: llvm.runHelper}),
-            "pythonH": new Python3Process({FS: fileSystem.FS, onrunprocess: llvm.runHelper}),
+            "python": new Python3Process({FS: fileSystem.FS, onrunprocess: mPY.runHelper}),
+            "pythonH": new Python3Process({FS: fileSystem.FS, onrunprocess: mPY.runHelper}),
             "make": new MakeProcess({FS: fileSystem.FS}),
             "mpy-cross": new MpyCrossProcess({FS: fileSystem.FS}),
         };
@@ -94,19 +94,19 @@ class LLVM {
         // This is used to tell users an error occured, and show some help, removing for now.
         if(args.includes(" || ")){ 
             args = args.split(" || "); 
-            return llvm.run(args[0]);
+            return mPY.run(args[0]);
         }
         // " | " each command reads the output of the previous. This is handled in python.
         // Also handles redirecting stdout.
         else if(args.includes(" | ") || args.includes(" > ")){
             args = "pythonH utils.py "+args;
-            return llvm.run(args);
+            return mPY.run(args);
         }
         // Quotation marks are breaking things here for whatever reason. As we know that all the 
         // directories contain no spaces this seems sensible to change.
         if(args.includes("makemanifest.py")) args = args.replaceAll('"','')
         // Default case
-        return llvm.run(args);
+        return mPY.run(args);
     }
 
     run(args) {
@@ -115,8 +115,7 @@ class LLVM {
         // Again, to save changing the makefiles, we can just parse the command here. Giving a suitable LLVM
         // replacement command to GCC
         switch (args[0]){
-            case "arm-none-eabi-as"  : args.shift(); args.unshift("clang", "--target=thumbv7m-none-eabi", "-c"); break;
-            //case "arm-none-eabi-as"  : args = 'clang -cc1as -triple thumbv7m-none-unknown-eabi -filetype obj -main-file-name gchelper_thumb2.s -target-cpu cortex-m3 -target-feature +strict-align -fdebug-compilation-dir /src/codal_port -dwarf-debug-producer -dwarf-version=4 -mrelocation-model static -mllvm -arm-add-build-attributes -o build/shared/runtime/gchelper_thumb2.o ../../lib/micropython/shared/runtime/gchelper_thumb2.s'.split(/ +/g); break;
+            case "arm-none-eabi-as"  : args.shift(); args.unshift("clang", "--target=thumbv7m-none-eabi", "-c"); break; // Slightly more involved as LLVM has an internal assembler.
             case "arm-none-eabi-gcc" : args.shift(); args.unshift(...replaceGCC); break;
             case "arm-none-eabi-ar"  : args[0] = "llvm-ar"; break; 
         }
@@ -180,7 +179,7 @@ function buildMicropython() {
     postMessage("Running Make");
 
     // Using GNU Make, execute a dry-run, to later pipe all of these commands through llvm.run(),
-    let dryrun = llvm.run("make PYTHON=python --dry-run -s");
+    let dryrun = mPY.run("make PYTHON=python --dry-run -s");
 
     // Turn into an array, delimited by \n
     dryrun = dryrun.stdout.split("\n");
@@ -204,29 +203,30 @@ function buildMicropython() {
             dryrun[index].includes("CC") || 
             dryrun[index].includes("AS")) postMessage(dryrun[index].replace("echo ", ""));
         else{ 
-            let out = llvm.runHelper(dryrun[index]);
+            let out = mPY.runHelper(dryrun[index]);
             if(out?.stdout) postMessage(out.stdout);
         }
     }
 
     // Look into making this smaller, possibly building arm-llvm but this is a future goal
-    let e = llvm.run("ld.lld -plugin /libraries/arm-none-eabi/liblto_plugin.so -plugin-opt=/libraries/arm-none-eabi/lto-wrapper -plugin-opt=-fresolution=/tmp/ccljymuZ.res -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lc_nano -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lc_nano -X -o MICROBIT /libraries/arm-none-eabi/thumb/v7e-m+fp/softfp/crti.o /libraries/arm-none-eabi/thumb/v7e-m+fp/softfp/crtbegin.o /libraries/arm-none-eabi-newlib/thumb/v7e-m+fp/softfp/crt0.o -L/libraries/arm-none-eabi-newlib/thumb/v7e-m+fp/softfp -L/libraries/arm-none-eabi-newlib/thumb/v7e-m+fp/softfp -L/libraries/arm-none-eabi/thumb/v7e-m+fp/softfp --gc-sections --wrap atexit --start-group -lstdc++_nano -lsupc++_nano -lgcc -lnosys --end-group ../../lib/codal/../../src/codal_port/filesystem.ld -Map ../../lib/codal/build/MICROBIT.map --start-group ../build/CMakeFiles/MICROBIT.dir/home/johnn333/Documents/micro/micropython-microbit-v2/src/codal_app/main.cpp.o ../build/CMakeFiles/MICROBIT.dir/home/johnn333/Documents/micro/micropython-microbit-v2/src/codal_app/microbithal.cpp.o ../build/CMakeFiles/MICROBIT.dir/home/johnn333/Documents/micro/micropython-microbit-v2/src/codal_app/microbithal_audio.cpp.o ../build/CMakeFiles/MICROBIT.dir/home/johnn333/Documents/micro/micropython-microbit-v2/src/codal_app/microbithal_microphone.cpp.o ../build/CMakeFiles/MICROBIT.dir/home/johnn333/Documents/micro/micropython-microbit-v2/src/codal_app/mphalport.cpp.o ../../lib/codal/build/libcodal-microbit-v2.a ../../lib/codal/build/libcodal-core.a ../../lib/codal/build/libcodal-nrf52.a ../../lib/codal/build/libcodal-microbit-nrf5sdk.a ../../lib/codal/../../src/codal_port/build/libmicropython.a ../../lib/codal/build/libcodal-nrf52.a ../../lib/codal/build/libcodal-core.a ../../lib/codal/libraries/codal-microbit-v2/lib/bootloader.o ../../lib/codal/libraries/codal-microbit-v2/lib/mbr.o ../../lib/codal/libraries/codal-microbit-v2/lib/settings.o ../../lib/codal/libraries/codal-microbit-v2/lib/softdevice.o ../../lib/codal/libraries/codal-microbit-v2/lib/uicr.o -lnosys -lstdc++_nano -lsupc++_nano -lm -lc_nano -lgcc -lstdc++_nano -lsupc++_nano -lm -lc_nano -lgcc --end-group -lstdc++_nano -lm -lc_nano --start-group -lgcc -lc_nano --end-group --start-group -lgcc -lc_nano --end-group /libraries/arm-none-eabi/thumb/v7e-m+fp/softfp/crtend.o /libraries/arm-none-eabi/thumb/v7e-m+fp/softfp/crtn.o -T ../../lib/codal/libraries/codal-microbit-v2/ld/nrf52833-softdevice.ld");
-    console.log(e);
-    llvm.run("llvm-objcopy -O ihex MICROBIT MICROBIT.hex");
+    mPY.run("ld.lld -plugin /libraries/arm-none-eabi/liblto_plugin.so -plugin-opt=/libraries/arm-none-eabi/lto-wrapper -plugin-opt=-fresolution=/tmp/ccljymuZ.res -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lc_nano -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lc_nano -X -o MICROBIT /libraries/arm-none-eabi/thumb/v7e-m+fp/softfp/crti.o /libraries/arm-none-eabi/thumb/v7e-m+fp/softfp/crtbegin.o /libraries/arm-none-eabi-newlib/thumb/v7e-m+fp/softfp/crt0.o -L/libraries/arm-none-eabi-newlib/thumb/v7e-m+fp/softfp -L/libraries/arm-none-eabi-newlib/thumb/v7e-m+fp/softfp -L/libraries/arm-none-eabi/thumb/v7e-m+fp/softfp --gc-sections --wrap atexit --start-group -lstdc++_nano -lsupc++_nano -lgcc -lnosys --end-group ../../lib/codal/../../src/codal_port/filesystem.ld -Map ../../lib/codal/build/MICROBIT.map --start-group ../build/CMakeFiles/MICROBIT.dir/home/johnn333/Documents/micro/micropython-microbit-v2/src/codal_app/main.cpp.o ../build/CMakeFiles/MICROBIT.dir/home/johnn333/Documents/micro/micropython-microbit-v2/src/codal_app/microbithal.cpp.o ../build/CMakeFiles/MICROBIT.dir/home/johnn333/Documents/micro/micropython-microbit-v2/src/codal_app/microbithal_audio.cpp.o ../build/CMakeFiles/MICROBIT.dir/home/johnn333/Documents/micro/micropython-microbit-v2/src/codal_app/microbithal_microphone.cpp.o ../build/CMakeFiles/MICROBIT.dir/home/johnn333/Documents/micro/micropython-microbit-v2/src/codal_app/mphalport.cpp.o ../../lib/codal/build/libcodal-microbit-v2.a ../../lib/codal/build/libcodal-core.a ../../lib/codal/build/libcodal-nrf52.a ../../lib/codal/build/libcodal-microbit-nrf5sdk.a ../../lib/codal/../../src/codal_port/build/libmicropython.a ../../lib/codal/build/libcodal-nrf52.a ../../lib/codal/build/libcodal-core.a ../../lib/codal/libraries/codal-microbit-v2/lib/bootloader.o ../../lib/codal/libraries/codal-microbit-v2/lib/mbr.o ../../lib/codal/libraries/codal-microbit-v2/lib/settings.o ../../lib/codal/libraries/codal-microbit-v2/lib/softdevice.o ../../lib/codal/libraries/codal-microbit-v2/lib/uicr.o -lnosys -lstdc++_nano -lsupc++_nano -lm -lc_nano -lgcc -lstdc++_nano -lsupc++_nano -lm -lc_nano -lgcc --end-group -lstdc++_nano -lm -lc_nano --start-group -lgcc -lc_nano --end-group --start-group -lgcc -lc_nano --end-group /libraries/arm-none-eabi/thumb/v7e-m+fp/softfp/crtend.o /libraries/arm-none-eabi/thumb/v7e-m+fp/softfp/crtn.o -T ../../lib/codal/libraries/codal-microbit-v2/ld/nrf52833-softdevice.ld");
+    mPY.run("llvm-objcopy -O ihex MICROBIT MICROBIT.hex");
 
-    // Permission errors are being generated here, TODO
-    //console.log(llvm.run("python ../addlayouttable.py /src/codal_port/microbit.hex ../../lib/codal/build/MICROBIT.map -o MICROBIT.hex"));
+    // LLD doesnt seem to generate a file compatiable with addlayouttable. This will need looking into and possibly not an easy fix,
+    // we already have problems with the linker, with the heap section so a revist here will be necessary. 
+    //self.fileSystem.FS.chmod("/src/codal_port/microbit.hex", 0o0444);
+    //let e = mPY.run("python ../addlayouttable.py /src/codal_port/microbit.hex ../../lib/codal/build/MICROBIT.map -o MICROBIT.hex");
     postMessage("Finished :)");
     return true;
 }
 
 
 onmessage = async(e) => {
-    if(!llvm.initialised) postMessage("Loading, please wait");
+    if(!mPY.initialised) postMessage("Loading, please wait");
     else{
         buildMicropython();
-        postMessage({origin: "hex", body: await llvm.getHex()});
+        postMessage({origin: "hex", body: await mPY.getHex()});
     }
 }
 
-const llvm = new LLVM();
+const mPY = new MicroPython();
