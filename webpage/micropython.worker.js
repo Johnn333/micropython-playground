@@ -25,7 +25,7 @@ class MicroPython {
         self.buffer = [];
 
         // Populate FS and sync.
-        await fileSystem.unpack("./root.pack.br");
+        await fileSystem.unpack("./archive.tar.xz");
         await fileSystem.pull();
 
         // Create WebAssembly modules, using Emscripten generated files.
