@@ -114,23 +114,28 @@ class MicroPython {
         
         // Again, to save changing the makefiles, we can just parse the command here. Giving a suitable LLVM
         // replacement command to GCC
+        let process = "llvm-box"; // Assume process is LLVM
         switch (args[0]){
             case "arm-none-eabi-as"  : args.shift(); args.unshift("clang", "--target=thumbv7m-none-eabi", "-c"); break; // Slightly more involved as LLVM has an internal assembler.
             case "arm-none-eabi-gcc" : args.shift(); args.unshift(...replaceGCC); break;
-            case "arm-none-eabi-ar"  : args[0] = "llvm-ar"; break; 
+            case "arm-none-eabi-ar"  : args[0] = "llvm-ar"; break;
+            case "ld.lld"            : break;
+            case "llvm-objcopy"      : break;
+            default                  : process = null; break; // If none of the above, LLVM isnt running
         }
 
-        let process = null;
         let cd = "";
         switch (args[0]){
-            case ""        : process = "pythonH"; args[0] = "python"; break; // TODO, figure out why mpy-tool.py script has nothing for arg[0].
             case "make"    : process = "make";     break;
-            case "/lib/micropython/mpy-cross/build/mpy-cross"    : process = "mpy-cross";     break;
             case "python"  : process = "python";   break;
             case "pythonH" : process = "pythonH";  args[0] = "python"; break; // Python Helper, so Python can invkoke python.
+            
+            case "/lib/micropython/mpy-cross/build/mpy-cross"    : process = "mpy-cross";     break;
+            case ""        : process = "pythonH";  args[0] = "python"; break; // TODO, figure out why mpy-tool.py script has nothing for arg[0].
+            
             case "cp"      : return;                       // Ignoring CP for now, not required.
             case "mkdir"   : return this.makeDir(args);    // mkdir replacement.
-            default        : process = "llvm-box"; break;  // TODO Avoid doing 5 different checks for this, should probably be error handling though
+            default        : if(process == null) return ;   // TODO Error handling.
         }
 
         console.log(args.join());
@@ -146,12 +151,10 @@ class MicroPython {
         return p;
     };
 
-    //Cannot get readFile() to work, not sure if its due to the encoding of MICROBIT.hex,
-    //FileSystem only allows 'utf8' and 'binary'. This returns the byte array anyway.
+    // chmod has to be applied to certain generated files to give us permission to read.
     async getHex(){
-        let arr = Array.from(await self.fileSystem.FS.analyzePath('/src/codal_port/MICROBIT.hex').object.contents);
-        while(arr[arr.length-1] === 0) arr.pop(); // Removing trailing Zeroes, Array is ~twice the size it needs to be
-        return Uint8Array.from(arr);
+        self.fileSystem.FS.chmod("/src/codal_port/MICROBIT.hex", 0o0444);
+        return self.fileSystem.readFile("/src/codal_port/MICROBIT.hex")
     };
 
     async saveFiles(files) {
