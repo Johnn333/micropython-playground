@@ -26,11 +26,9 @@
 
 import EmProcess from "./EmProcess.mjs";
 import BusyBoxModule from "./wasm/busybox_unstripped.mjs";
-// import BrotliProcess from "./BrotliProcess.mjs";
 import createLazyFile from "./emscripten/createLazyFile.mjs"
 
 export default class FileSystem extends EmProcess {
-    _brotli = null;
     _cache = null;
     init = false;
 
@@ -86,10 +84,6 @@ export default class FileSystem extends EmProcess {
             }
             await this.exec(["busybox", "tar", "xvf", "/tmp/archive.tar"], { cwd: "/" });
             await this.FS.unlink("/tmp/archive.tar");
-
-            console.log(this.analyzePath("/"));
-            
-            //Brotli isnt used after this.S
         }));
     }
 
