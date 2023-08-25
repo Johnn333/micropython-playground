@@ -62,7 +62,7 @@ class MicroPython {
                                         '#define MICROBIT_BUILD_DATE "2023-07-25"');
         this.initialised = true;
 
-        self.postMessage("Ready");
+        self.postMessage({origin:"log", body:"Ready"});
         
         self.postMessage({
             origin: "pyfile",
@@ -133,9 +133,9 @@ class MicroPython {
             case "/lib/micropython/mpy-cross/build/mpy-cross"    : process = "mpy-cross";     break;
             case ""        : process = "pythonH";  args[0] = "python"; break; // TODO, figure out why mpy-tool.py script has nothing for arg[0].
             
-            case "cp"      : return;                       // Ignoring CP for now, not required.
+            case "cp"      : return;                       // Ignoring CP for now, not required. Could pipe this into busy box?
             case "mkdir"   : return this.makeDir(args);    // mkdir replacement.
-            default        : if(process == null) return ;   // TODO Error handling.
+            default        : if(process == null) return ;  // TODO Error handling.
         }
 
         console.log(args.join());
@@ -174,12 +174,13 @@ class MicroPython {
     }
 }
 
+// Look into picolibc here, it may not end up being used but it could fix this mess
 const replaceGCC = ['clang','--target=arm-none-eabi','-I/include','-I/include/arm-none-eabi-c++/c++/10.3.1',
 '-I/include/arm-none-eabi-c++','-I/include/arm-none-eabi-c++/arm-none-eabi/thumb/v7e-m+fp/softfp','-I/include/arm-none-eabi-c++/c++/10.3.1/arm-none-eabi',
 '-I/include/arm-none-eabi-c++/backward','-I/include/arm-none-eabi/include','-I/include/arm-none-eabi/include-fixed']
 
 function buildMicropython() {
-    postMessage("Running Make");
+    self.postMessage({origin:"log", body:"Running Make"})
 
     // Using GNU Make, execute a dry-run, to later pipe all of these commands through llvm.run(),
     let dryrun = mPY.run("make PYTHON=python --dry-run -s");
@@ -195,19 +196,25 @@ function buildMicropython() {
         return item.indexOf("#") !== 0;
     });
 
-    // TODO, this removes any 'touch' command, dont have this avaliable in wasm
+    // TODO, this removes any 'touch' command, dont have this avaliable in wasm. Busybox could offer this functionality 
     dryrun = dryrun.filter(function (item) {
         return item.indexOf("touch") !== 0;
     });
 
     // Send each element in dry run for processing.
     for(let index in dryrun){
+        // Return build info to user.
         if(dryrun[index].includes("GEN") ||
             dryrun[index].includes("CC") || 
-            dryrun[index].includes("AS")) postMessage(dryrun[index].replace("echo ", ""));
+            dryrun[index].includes("AS")) self.postMessage({origin:"log", body:dryrun[index].replace("echo ", "")});
         else{ 
             let out = mPY.runHelper(dryrun[index]);
-            if(out?.stdout) postMessage(out.stdout);
+            if(out?.stdout) self.postMessage({origin:"log", body:out.stdout});
+            // Stop If an error is encountered
+            if(out?.stderr){
+                self.postMessage({origin: "log", body: out.stderr});
+                return;
+            };
         }
     }
 
@@ -219,16 +226,16 @@ function buildMicropython() {
     // we already have problems with the linker, with the heap section so a revist here will be necessary. 
     //self.fileSystem.FS.chmod("/src/codal_port/microbit.hex", 0o0444);
     //let e = mPY.run("python ../addlayouttable.py /src/codal_port/microbit.hex ../../lib/codal/build/MICROBIT.map -o MICROBIT.hex");
-    postMessage("Finished :)");
+    self.postMessage({origin:"log", body:"Finished :)"});
     return true;
 }
 
 
 onmessage = async(e) => {
-    if(!mPY.initialised) postMessage("Loading, please wait");
+    if(!mPY.initialised) self.postMessage({origin:"log", body:"Loading, Please wait"});
     else{
         buildMicropython();
-        postMessage({origin: "hex", body: await mPY.getHex()});
+        self.postMessage({origin: "hex", body: await mPY.getHex()});
     }
 }
 

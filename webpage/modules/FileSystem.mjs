@@ -26,7 +26,6 @@
 
 import EmProcess from "./EmProcess.mjs";
 import BusyBoxModule from "./wasm/busybox_unstripped.mjs";
-import createLazyFile from "./emscripten/createLazyFile.mjs"
 
 export default class FileSystem extends EmProcess {
     _cache = null;
@@ -37,38 +36,15 @@ export default class FileSystem extends EmProcess {
         this.#init(cache, opts);
     }
 
-    #init = async (cache, opts) => {
+    #init = async () => {
         await this;
-        //this._brotli = await new BrotliProcess({ FS: this.FS, ...opts});
-        // this._cache = (async () => {
-        //     while (cache.endsWith("/")) {
-        //         cache = cache.slice(0, -1);
-        //     }
-        //     if (this.exists(cache)) return cache;
-        //     this.persist(cache);
-        //     await this.pull();
-        //     return cache;
-        // })();
         this.init = true;
     }
 
     async unpack(...paths) {
         return Promise.all(paths.flat().map(async (path) => {
-            // postMessage({
-            //     target: "worker",
-            //     type: "info",
-            //     body: "Downloading root",
-            // })
-
-
             let file = await fetch(path);
             let buffer = new Uint8Array(await file.arrayBuffer());
-
-            // postMessage({
-            //     target: "worker",
-            //     type: "info",
-            //     body: "Unpacking",
-            // })
 
             if (path.endsWith(".xz")) {
                 // it's an xz file, decompress it
@@ -85,24 +61,6 @@ export default class FileSystem extends EmProcess {
             await this.exec(["busybox", "tar", "xvf", "/tmp/archive.tar"], { cwd: "/" });
             await this.FS.unlink("/tmp/archive.tar");
         }));
-    }
-
-    async cachedLazyFile(path, size, md5, url) {
-        const cache = await this._cache;
-
-        if (this.exists(path)) {
-            this.unlink(path);
-        }
-        if (this.exists(`${cache}/${md5}`)) {
-            const data = this.readFile(`${cache}/${md5}`, {encoding: "binary"});
-            this.writeFile(path, data);
-        } else {
-            const [, dirname = "", basename] = /(.*\/)?([^\/]*)/.exec(path);
-            createLazyFile(this.FS, dirname, basename, size, url, true, false, async (data) => {
-                this.writeFile(`${cache}/${md5}`, data);
-                await this.push();
-            });
-        }
     }
 
     persist(path) {
