@@ -27,9 +27,7 @@ class MicroPython {
         // Populate FS and sync.
         await fileSystem.unpack("./archive.tar.xz");
         await fileSystem.pull();
-
-
-        console.log(fileSystem.analyzePath("/"));
+        
         // Create WebAssembly modules, using Emscripten generated files.
         // Wait for instantiation to complete. Store in GlobalWorkerSpace.
         const tools = {
