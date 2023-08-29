@@ -28,6 +28,8 @@ class MicroPython {
         await fileSystem.unpack("./archive.tar.xz");
         await fileSystem.pull();
 
+
+        console.log(fileSystem.analyzePath("/"));
         // Create WebAssembly modules, using Emscripten generated files.
         // Wait for instantiation to complete. Store in GlobalWorkerSpace.
         const tools = {
@@ -39,7 +41,11 @@ class MicroPython {
         };
         for (let tool in tools) {
             await tools[tool];
+            // Remove WASM binary from FileSystem once instantiated
+            if(!tool.includes("python")) fileSystem.delete("/wasm/"+tool+".wasm");
         };
+        // Only remove python.wasm once both processes have been invoked.
+        fileSystem.delete("/wasm/python.wasm");
         self.tools = tools;
 
         // Overwrite normal stdin functionality for "llvm-box" wasm

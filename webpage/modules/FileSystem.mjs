@@ -49,23 +49,20 @@ export default class FileSystem extends EmProcess {
             if (path.endsWith(".xz")) {
                 // it's an xz file, decompress it
                 await this.FS.writeFile("/tmp/archive.tar.xz", buffer);
+                buffer = null;
 
                 // Ensure initialisation has happened (should await on wasm module here, but this can be difficult)
                 while (this.init===false) {await new Promise(r => setTimeout(r, 10))};
                 
-                // This deletes the parent archive for us.
-                await this.exec(["busybox", "xz", "-d", "archive.tar.xz"], { cwd: "/tmp/" });
+                // Use the "-k" flag to keep the compressed archive so we can remove ourselves.
+                await this.exec(["busybox", "xz", "-k", "-d", "archive.tar.xz"], { cwd: "/tmp/" });
+                await this.delete("/tmp/archive.tar.xz");
             } else {
                 await this.FS.writeFile("/tmp/archive.tar", buffer);
             }
             await this.exec(["busybox", "tar", "xvf", "/tmp/archive.tar"], { cwd: "/" });
-            await this.FS.unlink("/tmp/archive.tar");
+            await this.delete("/tmp/archive.tar");
         }));
-    }
-
-    persist(path) {
-        this.FS.mkdirTree(path);
-        this.FS.mount(this.FS.filesystems.IDBFS, {}, path);
     }
 
     exists(path) {
@@ -81,6 +78,10 @@ export default class FileSystem extends EmProcess {
         return this.FS.mkdir(...args)
     }
     unlink(...args) {
+        return this.FS.unlink(...args)
+    }
+    delete(...args){
+        this.FS.analyzePath(...args).object.contents = null;
         return this.FS.unlink(...args)
     }
     readFile(...args) {
