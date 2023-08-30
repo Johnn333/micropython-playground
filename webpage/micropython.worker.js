@@ -27,15 +27,16 @@ class MicroPython {
         // Populate FS and sync.
         await fileSystem.unpack("./archive.tar.xz");
         await fileSystem.pull();
-        
+
         // Create WebAssembly modules, using Emscripten generated files.
         // Wait for instantiation to complete. Store in GlobalWorkerSpace.
         const tools = {
-            "llvm-box": new LlvmBoxProcess({FS: fileSystem.FS, noFSInit: true}),
+            // This order is semi-important to reduce max RAM usage.
+            "mpy-cross": new MpyCrossProcess({FS: fileSystem.FS}),
+            "make": new MakeProcess({FS: fileSystem.FS}),
             "python": new Python3Process({FS: fileSystem.FS, onrunprocess: mPY.runHelper}),
             "pythonH": new Python3Process({FS: fileSystem.FS, onrunprocess: mPY.runHelper}),
-            "make": new MakeProcess({FS: fileSystem.FS}),
-            "mpy-cross": new MpyCrossProcess({FS: fileSystem.FS}),
+            "llvm-box": new LlvmBoxProcess({FS: fileSystem.FS, noFSInit: true}),
         };
         for (let tool in tools) {
             await tools[tool];
@@ -116,8 +117,8 @@ class MicroPython {
     run(args) {
         if((typeof args) === "string") args = args.split(/ +/g);
         
-        // Again, to save changing the makefiles, we can just parse the command here. Giving a suitable LLVM
-        // replacement command to GCC
+        // Again, to save changing the makefiles, we can just parse the command here. 
+        // Giving a suitable LLVM replacement command to GCC
         let process = "llvm-box"; // Assume process is LLVM
         switch (args[0]){
             case "arm-none-eabi-as"  : args.shift(); args.unshift("clang", "--target=thumbv7m-none-eabi", "-c"); break; // Slightly more involved as LLVM has an internal assembler.
@@ -142,15 +143,11 @@ class MicroPython {
             default        : if(process == null) return ;  // TODO Error handling.
         }
 
-        console.log(args.join());
-
         let p = self.tools[process].exec(args, {
             print: () => () => {},
             printErr: () => () => {},
             cwd: "/src/codal_port".concat(cd)
         })
-
-        console.log(p);
 
         return p;
     };
