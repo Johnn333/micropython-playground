@@ -20,7 +20,7 @@ if [ ! -d $MAKE_SRC/ ]; then
 
     # This is the last tested commit of Make.
     # Feel free to try with a newer version
-    COMMIT=ed493f6c9116cc217b99c2cfa6a95f15803235a2
+    COMMIT=88d67cf23693be26218193a9b37a9534e5028a45
     git fetch origin $COMMIT
     git reset --hard $COMMIT
 
@@ -43,11 +43,12 @@ if [ ! -d $MAKE_BUILD/ ]; then
         -s EXPORTED_FUNCTIONS=_main,_free,_malloc \
         -s EXPORTED_RUNTIME_METHODS=FS,PROXYFS,ERRNO_CODES,allocateUTF8 \
         -lproxyfs.js \
-        --js-library=../../fsroot.js \
+        --js-library=../../emlib/fsroot.js \
     " emconfigure $MAKE_SRC/configure \
         --host=wasm32-unknown-emscripten \
 
-    emmake make -j$(nproc)
+    sed -i '/^LINK/ s/$/.mjs/' Makefile
+    make MAKE_MAINTAINER_MODE= MAKE_CFLAGS= -j$(nproc)
 
     popd
 fi
