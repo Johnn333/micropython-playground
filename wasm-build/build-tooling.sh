@@ -19,5 +19,3 @@ mkdir -p $TOOLING_BUILD
 
 $SRC/tooling/wasm-transform/compile.sh $TOOLING_BUILD
 cp $SRC/tooling/wasm-transform/{codegen.sh,merge_codegen.sh,wasm-transform.sh} $TOOLING_BUILD
-
-$SRC/tooling/wasm-package/compile.sh $TOOLING_BUILD

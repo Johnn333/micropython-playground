@@ -8,13 +8,16 @@ RUN DEBIAN_FRONTEND=noninteractive apt --no-install-recommends -qy update && \
     pkg-config \
     ninja-build \
     jq \
-    brotli \
     autoconf \
     autoconf-archive \
     automake \
     zlib1g-dev \
-    clang
-
+    texinfo \
+    autopoint \
+    gettext \
+    clang && \
+    DEBIAN_FRONTEND=noninteractive apt --no-install-recommends -qy upgrade
+    
 # Add to PATH the clang version that ships with emsdk
 ENV PATH="${EMSDK}/upstream/bin:${PATH}"
 

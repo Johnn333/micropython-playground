@@ -47,7 +47,9 @@ if [ ! -d $MAKE_BUILD/ ]; then
     " emconfigure $MAKE_SRC/configure \
         --host=wasm32-unknown-emscripten \
 
+    # Awkward fix to output .mjs files. Find line in MakeFile defining LINK, append .mjs to it.
     sed -i '/^LINK/ s/$/.mjs/' Makefile
+
     make MAKE_MAINTAINER_MODE= MAKE_CFLAGS= -j$(nproc)
 
     popd
