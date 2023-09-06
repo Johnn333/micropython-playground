@@ -37,9 +37,11 @@ pushd $BUSY_SRC/
 
 mkdir -p arch/em
 
+# This is a config containing just "tar" and "xz -d". 
+# I imagine most of busybox should work, but we dont need it here.
 cp $SRC/patches/.config $BUSY_SRC
 
-# Generate an override make file.
+# Generate an override Makefile.
 echo 'cmd_busybox__ = $(CC) -o $@.mjs \
      -Wl,--start-group \
      -s LLD_REPORT_UNDEFINED=1 \

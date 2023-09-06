@@ -1,5 +1,5 @@
 # This is the last tested version of emscripten.
-# Feel free to try with a newer version
+# Feel free to try with a newer version. 3.1.24 is verified working!
 FROM emscripten/emsdk:3.1.40
 
 RUN DEBIAN_FRONTEND=noninteractive apt --no-install-recommends -qy update && \
