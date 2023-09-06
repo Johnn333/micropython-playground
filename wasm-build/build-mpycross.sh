@@ -45,7 +45,7 @@ LDFLAGS="\
     CC=emcc \
     STRIP="echo STRIP is disabled" \
     SIZE="echo SIZE is disabled" \
-    LDFLAGS_ARCH=-Wl,-Map=$@.map, -Wl,--gc-sections \
+    LDFLAGS_ARCH=-Wl,-Map=\$@.map, -Wl,--gc-sections \
     PROG:=mpy-cross.mjs \
 
 popd
