@@ -4,7 +4,7 @@
 
 What is this? <br>
 An early tech demo repo, attempting to get get micropythons microbit port building within the browser. For potential use as a "backend" for the current Python editor: https://python.microbit.org/v/3 <br>
-Included are build scripts for WebAssembly modules (Clang/LLD, GNU Make, MpyCross, CPython, BusyBox) and a demo site to showcase the functionality: https://johnn333.github.io/micropython-playground/webpage/.
+Included are build scripts for WebAssembly modules (Clang/LLD, GNU Make, MpyCross, CPython, BusyBox) and a demo site to showcase the functionality: [Demo](https://microbit-foundation.github.io/micropython-browser-compiler-playground/webpage/)
 
 ## Table of Contents
 
@@ -27,7 +27,7 @@ Its highly recommended to run this build process using Docker. If you would like
 1. Clone this repository to your local machine:
 
    ```bash
-    $ git clone https://github.com/Johnn333/micropython-playground.git
+    $ git clone https://github.com/microbit-foundation/micropython-browser-compiler-playground.git
     $ cd micropython-playground/wasm-build
     $ ./build-with-docker.sh
 
