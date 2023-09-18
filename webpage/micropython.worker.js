@@ -176,7 +176,7 @@ class MicroPython {
 }
 
 // Look into picolibc here, it may not end up being used but it could fix this mess
-const replaceGCC = ['clang','--target=arm-none-eabi','-I/include','-I/include/arm-none-eabi-c++/c++/10.3.1',
+const replaceGCC = ['clang','--target=arm-none-eabi','-fshort-enums','-I/include','-I/include/arm-none-eabi-c++/c++/10.3.1',
 '-I/include/arm-none-eabi-c++','-I/include/arm-none-eabi-c++/arm-none-eabi/thumb/v7e-m+fp/softfp','-I/include/arm-none-eabi-c++/c++/10.3.1/arm-none-eabi',
 '-I/include/arm-none-eabi-c++/backward','-I/include/arm-none-eabi/include','-I/include/arm-none-eabi/include-fixed']
 
