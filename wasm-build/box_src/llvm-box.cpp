@@ -1,3 +1,6 @@
+// https://github.com/jprendes/emception/blob/master/LICENSE.MIT
+// MIT License
+
 #include <string.h>
 #include <stdio.h>
 

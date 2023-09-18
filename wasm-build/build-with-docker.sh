@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# https://github.com/jprendes/emception/blob/4f213c76f2898ef2ee295b28bfe3ff99bb8eccf7/build-with-docker.sh
+# MIT License
+
 SRC=$(dirname $0)
 SRC=$(realpath "$SRC")
 
