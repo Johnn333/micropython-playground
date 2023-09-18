@@ -1,3 +1,5 @@
+# This repo is experimental! Everything here is a proof of concept and not finalised. Things may not work as expected.
+
 # micropython-playground
 
 What is this? <br>
